@@ -1,0 +1,9 @@
+[submodule "drivers/stm32g0xx-hal"]
+	path = drivers/stm32g0xx-hal
+	url = https://github.com/STMicroelectronics/stm32g0xx-hal-driver
+[submodule "drivers/cmsis_device_g0"]
+	path = drivers/cmsis_device_g0
+	url = https://github.com/STMicroelectronics/cmsis_device_g0
+[submodule "drivers/CMSIS_6"]
+	path = drivers/CMSIS_6
+	url = https://github.com/ARM-software/CMSIS_6
