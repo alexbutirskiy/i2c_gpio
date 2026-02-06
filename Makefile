@@ -11,11 +11,15 @@ OBJDUMP := $(CROSS_COMPILE)objdump
 SIZE := $(CROSS_COMPILE)size
 AS := $(CROSS_COMPILE)as
 
-CFLAGS := -Wall -Wextra -O2 -g -DSTM32G031xx -mcpu=cortex-m0plus -mthumb -ffunction-sections -fdata-sections
 
-LDFLAGS := -T linker.ld
+CFLAGS := -Wall -Wextra -O2 -g -DSTM32G030xx -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections
+ASFLAGS := -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft
 
-INCLUDE := -Isrc -Ilib -Idrivers/cmsis_device_g0/Include/
+LDFLAGS := -Wl,--no-warn-mismatch -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft \
+--specs=nano.specs --specs=nosys.specs -Wl,--gc-sections  \
+-L lib/ld -T stm32g030x6.ld
+
+INCLUDE := -Isrc -Ilib -Idrivers/cmsis_device_g0/Include/ -Idrivers/CMSIS_6/CMSIS/Core/Include
 
 SRCS := $(shell find src lib -type f \( -name '*.c' -o -name '*.s' \))
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
@@ -27,7 +31,7 @@ $(BUILD)/%.o: %.c
 
 $(BUILD)/%.o: %.s
 	@mkdir -p $(dir $@)
-	$(AS) $< -o $@
+	$(AS) $(ASFLAGS) $< -o $@
 
 OUT := $(BUILD)/$(notdir $(CURDIR)).elf
 
@@ -37,6 +41,10 @@ $(OUT): $(OBJS)
 	@mkdir -p $(dir $@)
 	$(CC) $(LDFLAGS) -o $@ $(OBJS)
 	$(SIZE) $@
+	$(OBJCOPY) -O ihex $@ $(patsubst %.elf,%.hex,$@)
+
+clean:
+	rm -rf $(BUILD)
 
 debug:
 	@echo $(OBJS)
