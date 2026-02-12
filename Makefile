@@ -21,7 +21,8 @@ LDFLAGS := -Wl,--no-warn-mismatch -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft \
 
 INCLUDE := -Isrc -Ilib -Idrivers/cmsis_device_g0/Include/ -Idrivers/CMSIS_6/CMSIS/Core/Include
 
-SRCS := $(shell find src lib -type f \( -name '*.c' -o -name '*.s' \))
+SRC_DIRS := src lib
+SRCS := $(shell find $(SRC_DIRS) -type f \( -name '*.c' -o -name '*.s' \))
 OBJS := $(patsubst %.c,$(BUILD)/%.o,$(SRCS))
 OBJS := $(patsubst %.s,$(BUILD)/%.o,$(OBJS))
 
@@ -45,6 +46,10 @@ $(OUT): $(OBJS)
 
 clean:
 	rm -rf $(BUILD)
+
+spec:
+	@echo "Preprocessor output for debugging:"
+	$(CC) $(INCLUDE) $(CFLAGS) -E -P -v -dD "${INPUTS}"
 
 debug:
 	@echo $(OBJS)

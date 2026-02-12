@@ -8,5 +8,11 @@
         "MSYSTEM": "UCRT64"
       }
     }
+  },
+  "[cpp]": {
+    "editor.tabSize": 2
+  },
+  "[c]": {
+    "editor.tabSize": 2
   }
 }
