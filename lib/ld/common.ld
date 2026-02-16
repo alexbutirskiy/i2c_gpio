@@ -10,6 +10,7 @@ _Min_Stack_Size = 0x400;	/* required amount of stack */
 /* Sections */
 SECTIONS
 {
+
   /* The startup code into "FLASH" Rom type memory */
   .isr_vector :
   {
@@ -97,6 +98,8 @@ SECTIONS
     _sdata = .;        /* create a global symbol at data start */
     *(.data)           /* .data sections */
     *(.data*)          /* .data* sections */
+    *(.RamFunc)        /* .RamFunc sections */
+    *(.RamFunc*)       /* .RamFunc* sections */
 
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */

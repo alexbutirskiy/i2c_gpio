@@ -12,14 +12,16 @@ SIZE := $(CROSS_COMPILE)size
 AS := $(CROSS_COMPILE)as
 
 
-CFLAGS := -Wall -Wextra -O2 -g -DSTM32G030xx -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections
+CFLAGS := -std=c11 -Wall -Wextra -O2 -g -DSTM32G030xx -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections
 ASFLAGS := -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft
 
 LDFLAGS := -Wl,--no-warn-mismatch -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft \
 --specs=nano.specs --specs=nosys.specs -Wl,--gc-sections  \
 -L lib/ld -T stm32g030x6.ld
 
-INCLUDE := -Isrc -Ilib -Idrivers/cmsis_device_g0/Include/ -Idrivers/CMSIS_6/CMSIS/Core/Include
+INC_DIRS := src lib drivers/cmsis_device_g0/Include drivers/CMSIS_6/CMSIS/Core/Include \
+  drivers/stm32g0xx-hal/Inc lib/i2c_gpio lib/i2cDev lib/timer
+INCLUDE := $(foreach dir,$(INC_DIRS),-I$(dir))
 
 SRC_DIRS := src lib
 SRCS := $(shell find $(SRC_DIRS) -type f \( -name '*.c' -o -name '*.s' \))
