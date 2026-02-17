@@ -18,4 +18,5 @@ i2c_status_t i2cDev_read(i2cDev_t *dev, uint16_t addr, uint8_t *data, size_t len
 i2c_status_t i2cDev_write(i2cDev_t *dev, uint16_t addr, const uint8_t *data, size_t len);
 
 i2c_status_t i2cDev_writeReg(i2cDev_t *dev, uint8_t regAddr, uint8_t value);
+i2c_status_t i2cDev_readReg(i2cDev_t *dev, uint8_t regAddr, uint8_t *value);
 #endif /* LIB_I2C_DEV_H_ */

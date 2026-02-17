@@ -131,3 +131,7 @@ i2c_status_t i2cDev_writeReg(i2cDev_t *dev, uint8_t regAddr, uint8_t value)
   return i2cDev_write(dev, regAddr, &value, 1);
 }
 
+i2c_status_t i2cDev_readReg(i2cDev_t *dev, uint8_t regAddr, uint8_t *value)
+{
+  return i2cDev_read(dev, regAddr, value, 1);
+}
