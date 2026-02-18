@@ -4,6 +4,7 @@
 #include "i2c.h"
 #include "i2cDev.h"
 #include "timer.h"
+#include "i2c_slave_config.h"
 
 static void SystemClock_Config(void)
 {
@@ -30,10 +31,12 @@ void initPin(GPIO_TypeDef *GPIOx, uint32_t pin)
   LL_GPIO_SetPinMode(GPIOx, pin, LL_GPIO_MODE_OUTPUT);
   LL_GPIO_SetPinSpeed(GPIOx, pin, LL_GPIO_SPEED_FREQ_MEDIUM);
   LL_GPIO_SetPinOutputType(GPIOx, pin, LL_GPIO_OUTPUT_OPENDRAIN);
+  LL_GPIO_SetPinPull(GPIOx, pin, LL_GPIO_PULL_UP);
 }
 
 #define SDA GPIOA, LL_GPIO_PIN_4
 #define SCL GPIOA, LL_GPIO_PIN_5
+
 
 static void setData(bool state) {state ? LL_GPIO_SetOutputPin(SDA) : LL_GPIO_ResetOutputPin(SDA);}
 static bool getData() {return LL_GPIO_IsInputPinSet(SDA);}
@@ -72,6 +75,9 @@ int main(void)
   initPin(SDA);
   initPin(SCL);
 
+  initPin(I2C_SLAVE_SDA_PORT, 1u << I2C_SLAVE_SDA_PIN);
+  initPin(I2C_SLAVE_SCL_PORT, 1u << I2C_SLAVE_SCL_PIN);
+
   SystemClock_Config();
   SysTick_Config(SystemCoreClock / 1000);
 
@@ -88,7 +94,7 @@ int main(void)
   i2c_init(&i2c_0, &i2c_0_fn, 100);
 
   static i2cDev_t sc16is750_0;
-  i2cDev_init(&sc16is750_0, &i2c_0, 0x48, 100, I2C_DEV_ADDR8);
+  i2cDev_init(&sc16is750_0, &i2c_0, 0x48, 10, I2C_DEV_ADDR8);
 
   uint8_t reg = 0;
 
