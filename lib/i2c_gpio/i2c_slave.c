@@ -23,24 +23,29 @@
 //	pinState.scl = I2C_SLAVE_SCL_PORT->IDR & (1u << I2C_SLAVE_SCL_PIN);
 //}
 
-#define SDA_NOW	(1<<0)
-#define SCL_NOW	(1<<1)
-#define SDA_OLD	(1<<2)
-#define SCL_OLD	(1<<3)
+#define SDA_NOW_1	(1<<0)
+#define SCL_NOW_1	(1<<1)
+#define SDA_OLD_1	(1<<2)
+#define SCL_OLD_1	(1<<3)
+#define SDA_NOW_0	(0)
+#define SCL_NOW_0	(0)
+#define SDA_OLD_0	(0)
+#define SCL_OLD_0	(0)
 
-#define START         SCL_OLD |  SCL_NOW |  SDA_OLD | !SDA_NOW
-#define STOP          SCL_OLD |  SCL_NOW | !SDA_OLD |  SDA_NOW
-#define CLOCK_DOWN_1  SCL_OLD | !SCL_NOW |  SDA_OLD |  SDA_NOW
-#define CLOCK_DOWN_2  SCL_OLD | !SCL_NOW | !SDA_OLD | !SDA_NOW
 
-#define CLOCK_DOWN_3  SCL_OLD | !SCL_NOW | SDA_OLD | !SDA_NOW      // not expected
-#define CLOCK_DOWN_4  SCL_OLD | !SCL_NOW | SDA_OLD |  SDA_NOW      // not expected
+#define START         SCL_OLD_1 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_0
+#define STOP          SCL_OLD_1 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_1
+#define CLOCK_DOWN_1  SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_1
+#define CLOCK_DOWN_2  SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_0 | SDA_NOW_0
 
-#define CLOCK_UP_0      !SCL_OLD | SCL_NOW |  !SDA_OLD | !SDA_NOW
-#define CLOCK_UP_0_1    !SCL_OLD | SCL_NOW |   SDA_OLD | !SDA_NOW  // not expected
+#define CLOCK_DOWN_3  SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_0  // not expected
+#define CLOCK_DOWN_4  SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_1  // not expected
 
-#define CLOCK_UP_1      !SCL_OLD | SCL_NOW |   SDA_OLD |  SDA_NOW
-#define CLOCK_UP_1_1    !SCL_OLD | SCL_NOW |  !SDA_OLD |  SDA_NOW  // not expected
+#define CLOCK_UP_0    SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_0
+#define CLOCK_UP_0_1  SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_0  // not expected
+
+#define CLOCK_UP_1    SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_1
+#define CLOCK_UP_1_1  SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_1  // not expected
 
 static uint8_t state;
 bool start;
@@ -57,8 +62,8 @@ static bool transmitting;
 void i2c_slave_int()
 {
 	state <<= 2; // copy state -> old
-	state |= (I2C_SLAVE_SDA_PORT->IDR & (1u << I2C_SLAVE_SDA_PIN)) ? SDA_NOW : 0;
-	state |= (I2C_SLAVE_SCL_PORT->IDR & (1u << I2C_SLAVE_SCL_PIN)) ? SDA_NOW : 0;
+	state |= (I2C_SLAVE_SDA_PORT->IDR & (1u << I2C_SLAVE_SDA_PIN)) ? SDA_NOW_1 : 0;
+	state |= (I2C_SLAVE_SCL_PORT->IDR & (1u << I2C_SLAVE_SCL_PIN)) ? SCL_NOW_1 : 0;
 
 	switch(state)
 	{
