@@ -43,8 +43,8 @@ i2c_status_t i2c_readByte(i2c_t *i2c, uint8_t *data, ack_t ack)
   for (int i = 0; i < 8 && ret == I2C_OK; i++)
   {
     ret = pulseClk(i2c, 1);
-    *data >>= 1;
-    *data |= (i2c->fn->getData() ? 0x80 : 0x00);
+    *data <<= 1;
+    *data |= (i2c->fn->getData() ? 1 : 0);
   }
 
   if (ret == I2C_OK)
