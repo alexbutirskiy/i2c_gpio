@@ -12,7 +12,7 @@ SIZE := $(CROSS_COMPILE)size
 AS := $(CROSS_COMPILE)as
 
 
-CFLAGS := -std=c11 -Wall -Wextra -O2 -g -DSTM32G030xx -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections
+CFLAGS := -std=c11 -Wall -Wextra -O0 -g -DSTM32G030xx -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft -ffunction-sections -fdata-sections -MMD -MP
 ASFLAGS := -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft
 
 LDFLAGS := -Wl,--no-warn-mismatch -mcpu=cortex-m0plus -mthumb -mfloat-abi=soft \
@@ -38,7 +38,13 @@ $(BUILD)/%.o: %.s
 
 OUT := $(BUILD)/$(notdir $(CURDIR)).elf
 
+
+-include $(OBJS:.o=.d)
+
 all: $(OUT)
+
+$(OUT): Makefile
+$(OBJS): Makefile
 
 $(OUT): $(OBJS)
 	@mkdir -p $(dir $@)

@@ -4,7 +4,8 @@
 #include "i2c.h"
 #include "i2cDev.h"
 #include "timer.h"
-#include "i2c_slave_config.h"
+#include "i2c_slave.h"
+#include "stm32g0xx_ll_exti.h"
 
 static void SystemClock_Config(void)
 {
@@ -25,7 +26,7 @@ static void SystemClock_Config(void)
     SystemCoreClockUpdate();
 }
 
-void initPin(GPIO_TypeDef *GPIOx, uint32_t pin)
+static void initI2cPin(GPIO_TypeDef *GPIOx, uint32_t pin)
 {
   LL_GPIO_SetOutputPin(GPIOx, pin);
   LL_GPIO_SetPinMode(GPIOx, pin, LL_GPIO_MODE_OUTPUT);
@@ -72,11 +73,10 @@ int main(void)
   LL_GPIO_SetPinSpeed(GPIOA, LL_GPIO_PIN_7, LL_GPIO_SPEED_FREQ_MEDIUM);
   LL_GPIO_SetPinOutputType(GPIOA, LL_GPIO_PIN_7, LL_GPIO_OUTPUT_PUSHPULL);
 
-  initPin(SDA);
-  initPin(SCL);
+  initI2cPin(SDA);
+  initI2cPin(SCL);
 
-  initPin(I2C_SLAVE_SDA_PORT, 1u << I2C_SLAVE_SDA_PIN);
-  initPin(I2C_SLAVE_SCL_PORT, 1u << I2C_SLAVE_SCL_PIN);
+  I2c_SLAVE_INIT_INT();
 
   SystemClock_Config();
   SysTick_Config(SystemCoreClock / 1000);
