@@ -28,6 +28,20 @@ static void initPin(GPIO_TypeDef *GPIOx, uint32_t pin)
   LL_GPIO_SetPinPull(GPIOx, pin, LL_GPIO_PULL_UP);
 }
 
+static void SDA_IrqEnable()
+{
+  EXTI->RTSR1 |= (1u << I2C_SLAVE_SDA_PIN);
+  EXTI->FTSR1 |= (1u << I2C_SLAVE_SDA_PIN);
+  EXTI->IMR1  |= (1u << I2C_SLAVE_SDA_PIN);
+}
+
+static void SDA_IrqDisable()
+{
+  EXTI->RTSR1 &= ~(1u << I2C_SLAVE_SDA_PIN);
+  EXTI->FTSR1 &= ~(1u << I2C_SLAVE_SDA_PIN);
+  EXTI->IMR1  &= ~(1u << I2C_SLAVE_SDA_PIN);
+}
+
 void I2c_SLAVE_INIT_INT(void)
 {
   initPin(I2C_SLAVE_SDA_PORT, 1u << I2C_SLAVE_SDA_PIN);
@@ -35,11 +49,14 @@ void I2c_SLAVE_INIT_INT(void)
 
   LL_EXTI_SetEXTISource(EXPAND_CAT(LL_EXTI_CONFIG_PORT, I2C_SLAVE_SDA_PORT_LETTER),
                         EXPAND_CAT(LL_EXTI_CONFIG_LINE, I2C_SLAVE_SDA_PIN));
+
   LL_EXTI_SetEXTISource(EXPAND_CAT(LL_EXTI_CONFIG_PORT, I2C_SLAVE_SCL_PORT_LETTER),
                         EXPAND_CAT(LL_EXTI_CONFIG_LINE, I2C_SLAVE_SCL_PIN));
   EXTI->RTSR1 |= (1u << I2C_SLAVE_SCL_PIN);
   EXTI->FTSR1 |= (1u << I2C_SLAVE_SCL_PIN);
   EXTI->IMR1  |= (1u << I2C_SLAVE_SCL_PIN);
+
+  SDA_IrqEnable();
 
   if (I2C_SLAVE_SDA_PIN <= 1 || I2C_SLAVE_SCL_PIN <= 1)
   {
@@ -79,22 +96,26 @@ void I2c_SLAVE_INIT_INT(void)
 #define SDA_OLD_0	(0)
 #define SCL_OLD_0	(0)
 
+typedef enum
+{
+START         = SCL_OLD_1 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_0,
+STOP          = SCL_OLD_1 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_1,
+CLOCK_DOWN_1  = SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_1,
+CLOCK_DOWN_2  = SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_0 | SDA_NOW_0,
 
-#define START         SCL_OLD_1 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_0
-#define STOP          SCL_OLD_1 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_1
-#define CLOCK_DOWN_1  SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_1
-#define CLOCK_DOWN_2  SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_0 | SDA_NOW_0
+CLOCK_DOWN_3  = SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_0,  // not expected
+CLOCK_DOWN_4  = SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_1,  // not expected
 
-#define CLOCK_DOWN_3  SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_0  // not expected
-#define CLOCK_DOWN_4  SCL_OLD_1 | SCL_NOW_0 | SDA_OLD_1 | SDA_NOW_1  // not expected
+CLOCK_UP_0    = SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_0,
+CLOCK_UP_0_1  = SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_0,  // not expected
 
-#define CLOCK_UP_0    SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_0
-#define CLOCK_UP_0_1  SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_0  // not expected
+CLOCK_UP_1    = SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_1,
+CLOCK_UP_1_1  = SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_1,  // not expected
 
-#define CLOCK_UP_1    SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_1
-#define CLOCK_UP_1_1  SCL_OLD_0 | SCL_NOW_1 | SDA_OLD_0 | SDA_NOW_1  // not expected
+IDLE          = SCL_OLD_1 | SCL_NOW_1 | SDA_OLD_1 | SDA_NOW_1,
+}i2c_event_t;
 
-static uint8_t state = 3;
+static i2c_event_t event = 3;
 bool start;
 bool restart;
 bool stop;
@@ -108,11 +129,11 @@ static bool transmitting;
 
 void i2c_slave_int()
 {
-	state = (state << 2) & 0xF; // copy state -> old
-	state |= (I2C_SLAVE_SDA_PORT->IDR & (1u << I2C_SLAVE_SDA_PIN)) ? SDA_NOW_1 : 0;
-	state |= (I2C_SLAVE_SCL_PORT->IDR & (1u << I2C_SLAVE_SCL_PIN)) ? SCL_NOW_1 : 0;
+	event = (event << 2) & 0xF; // copy state -> old
+	event |= (I2C_SLAVE_SDA_PORT->IDR & (1u << I2C_SLAVE_SDA_PIN)) ? SDA_NOW_1 : 0;
+	event |= (I2C_SLAVE_SCL_PORT->IDR & (1u << I2C_SLAVE_SCL_PIN)) ? SCL_NOW_1 : 0;
 
-	switch(state)
+	switch(event)
 	{
 		case START:
 		{
@@ -173,8 +194,11 @@ void i2c_slave_int()
       }
       break;
     }
-
+    default:
+    {
+      break;
+    }
 	}
-	LL_EXTI_ClearRisingFlag_0_31(LL_EXTI_LINE_11);
-	LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_11);
+	LL_EXTI_ClearRisingFlag_0_31(LL_EXTI_LINE_11 | LL_EXTI_LINE_12);
+	LL_EXTI_ClearFallingFlag_0_31(LL_EXTI_LINE_11 | LL_EXTI_LINE_12);
 }
