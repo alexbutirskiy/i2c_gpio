@@ -7,6 +7,9 @@
 #include "i2c_slave.h"
 #include "stm32g0xx_ll_exti.h"
 
+#include "i2cSlaveMem.h"
+#include <string.h>
+
 static void SystemClock_Config(void)
 {
     FLASH->ACR |= FLASH_ACR_LATENCY_2;
@@ -58,8 +61,12 @@ i2c_status_t sc16is7x0_readReg(i2cDev_t *dev, uint8_t regAddr, uint8_t *value)
   return i2cDev_readReg(dev, regAddr << 3, value);
 }
 
+uint8_t slaveMem[256];
+
 int main(void)
 {
+  uint8_t buf[64];
+
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   // MCO to SYSCLK on PA8
@@ -78,6 +85,7 @@ int main(void)
 
   I2c_SLAVE_INIT_INT();
 
+
   SystemClock_Config();
   SysTick_Config(SystemCoreClock / 1000);
 
@@ -93,6 +101,14 @@ int main(void)
 
   i2c_init(&i2c_0, &i2c_0_fn, 100);
 
+  i2cSlaveMem_init(0xA0 >> 1, slaveMem, sizeof(slaveMem));
+  static i2cDev_t memEmul;;
+  i2cDev_init(&memEmul, &i2c_0, 0xA0 >> 1, 10, I2C_DEV_ADDR16);
+
+  memcpy(buf, "ABCDEFGH", 8);
+  i2cDev_write(&memEmul, 16, buf, 8);
+  i2cDev_read(&memEmul, 16, &buf[10], 8);
+
   static i2cDev_t sc16is750_0;
   i2cDev_init(&sc16is750_0, &i2c_0, 0x48, 10, I2C_DEV_ADDR8);
 
@@ -107,7 +123,6 @@ int main(void)
   sc16is7x0_writeReg(&sc16is750_0, 0x04, 0x00);
   sc16is7x0_writeReg(&sc16is750_0, 0x07, 0xAA);
 
-  uint8_t buf[10];
   for (size_t i = 0; i < sizeof(buf); i++)
   {
     i2cDev_read(&sc16is750_0, i, &buf[i], 1);

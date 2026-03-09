@@ -4,7 +4,7 @@
 #define I2C_CLK_STRETCH_TIMEOUT_US 1000
 #endif
 
-typedef enum { ACK, NOACK } ack_t;
+typedef enum { ACK = 0, NOACK } ack_t;
 
 static i2c_status_t pulseClk(i2c_t *i2c, bool dataState)
 {
